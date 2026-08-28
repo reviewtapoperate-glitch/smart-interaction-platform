@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { ensurePlatformTables } from "./services/platform.js";
-import { API_ROOT } from "../../contract/api-contract.js";
+import { API_ROOT } from "../contract/api-contract.js";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import businessRouter from "./routes/business.js";
@@ -26,8 +26,8 @@ import adminRouter from "./routes/admin.js";
 const app = express();
 const httpServer = createServer(app);
 const dirname = path.dirname(fileURLToPath(import.meta.url));
-const frontendDir = path.resolve(dirname, "../../frontend/public");
-const contractFile = path.resolve(dirname, "../../contract/api-contract.js");
+const frontendDir = path.resolve(dirname, "../frontend/public");
+const contractFile = path.resolve(dirname, "../contract/api-contract.js");
 const io = new Server(httpServer, { cors: { origin: env.FRONTEND_URL, methods: ["GET", "POST", "PATCH", "PUT"] } });
 app.set("io", io);
 app.use(helmet());
@@ -65,7 +65,7 @@ app.get("/", (_req, res) => res.sendFile(path.join(frontendDir, "index.html")));
 app.get("/e/:token", (_req, res) => res.sendFile(path.join(frontendDir, "endpoint.html")));
 app.get("/s/:token", (_req, res) => res.sendFile(path.join(frontendDir, "session.html")));
 app.get("/app.html", (_req, res) => res.sendFile(path.join(frontendDir, "app.html")));
-app.get("/_rt-admin", (_req, res) => res.sendFile(path.join(frontendDir, "admin.html")));
+app.get("/_rt-admin", (_req, res) => res.sendFile(path.join(frontendDir, "admin.html"));
 
 async function start() {
   await ensurePlatformTables();
