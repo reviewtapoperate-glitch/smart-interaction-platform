@@ -1,0 +1,48 @@
+import { API, apiPath } from "/api-contract.js";
+
+const token = location.pathname.split("/").filter(Boolean).pop();
+const externalActions = [
+  ["reviewUrl", "REVIEW_CLICKED", "★ Leave a Google review", "primary big"],
+  ["whatsappUrl", "WHATSAPP_CLICKED", "💬 WhatsApp", "secondary big"],
+  ["websiteUrl", "WEBSITE_CLICKED", "🌐 Visit website", "secondary big"],
+  ["socialUrl", "SOCIAL_CLICKED", "◎ Social media", "secondary big"],
+  ["directionsUrl", "DIRECTIONS_CLICKED", "⌖ Get directions", "secondary big"]
+];
+
+async function request(route, { params, body } = {}) {
+  const response = await fetch(apiPath(route, params), { method: route.method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "Request failed");
+  return payload;
+}
+
+try {
+  const data = await request(API.public.endpoint, { params: { token } });
+  businessName.textContent = data.business.name;
+  subtitle.textContent = data.endpoint.name ? `${data.endpoint.name} · What would you like to do?` : "What would you like to do?";
+  const profile = data.endpoint.actionProfile || {};
+  const actions = document.getElementById("actions");
+  for (const [property, action, label, classes] of externalActions) {
+    if (!profile[property]) continue;
+    const button = document.createElement("button");
+    button.className = classes; button.style.display = "block"; button.style.width = "100%"; button.style.margin = "12px 0"; button.textContent = label;
+    button.addEventListener("click", async () => {
+      await request(API.public.action, { params: { token }, body: { action } });
+      location.assign(profile[property]);
+    });
+    actions.append(button);
+  }
+  if (profile.allowOrdering) {
+    const button = document.createElement("button");
+    button.className = "secondary big"; button.style.display = "block"; button.style.width = "100%"; button.style.margin = "12px 0"; button.textContent = "Browse and order";
+    button.addEventListener("click", async () => {
+      const result = await request(API.public.startSession, { params: { token }, body: {} });
+      location.assign(`/s/${encodeURIComponent(result.session.publicToken)}`);
+    });
+    actions.append(button);
+  }
+  if (!actions.children.length) actions.textContent = "This smart link has not been configured yet.";
+} catch (error) {
+  businessName.textContent = "Smart link unavailable";
+  subtitle.textContent = error.message;
+}

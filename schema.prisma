@@ -1,0 +1,316 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum EndpointType {
+  TABLE
+  ROOM
+  PRODUCT
+  SERVICE
+  WAITER
+  EVENT
+  CUSTOM
+}
+
+enum EndpointStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SessionStatus {
+  ACTIVE
+  PAID
+  CLOSED
+  CANCELLED
+}
+
+enum OrderStatus {
+  OPEN
+  SUBMITTED
+  SERVED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  EXPIRED
+  REQUIRES_REVIEW
+}
+
+enum PaymentProvider {
+  MPESA
+  STRIPE
+  PAYSTACK
+  FLUTTERWAVE
+  PESAPAL
+  OTHER
+}
+
+enum EventStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum SubscriptionPlan {
+  SMART
+  BUSINESS
+  PRO
+  ENTERPRISE
+  EVENT
+}
+
+model Business {
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  countryCode       String             @default("KE")
+  currency          String             @default("KES")
+  timezone          String             @default("Africa/Nairobi")
+  websiteUrl        String?
+  googleBusinessUrl String?
+  logoUrl           String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  users             User[]
+  branches          Branch[]
+  endpoints         Endpoint[]
+  products          Product[]
+  sessions          Session[]
+  orders            Order[]
+  payments          Payment[]
+  analytics         AnalyticsEvent[]
+  integrations      Integration[]
+  subscription      Subscription?
+  auditLogs         AuditLog[]
+  events            Event[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  businessId   String
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         UserRole  @default(OWNER)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orders       Order[]   @relation("OrderStaff")
+  auditLogs    AuditLog[]
+}
+
+model Branch {
+  id         String     @id @default(cuid())
+  businessId String
+  name       String
+  code       String
+  address    String?
+  active     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  endpoints  Endpoint[]
+  sessions   Session[]
+  orders     Order[]
+  events     Event[]
+  @@unique([businessId, code])
+}
+
+model Endpoint {
+  id             String         @id @default(cuid())
+  businessId     String
+  branchId       String?
+  name           String
+  code           String
+  type           EndpointType
+  publicToken    String         @unique
+  status         EndpointStatus @default(ACTIVE)
+  nfcEnabled     Boolean        @default(true)
+  qrEnabled      Boolean        @default(true)
+  actionProfile  Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  business       Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch         Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  sessions       Session[]
+  analytics      AnalyticsEvent[]
+  @@unique([businessId, code])
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  sku         String?
+  priceMinor  Int
+  currency    String    @default("KES")
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+  @@index([businessId, active])
+}
+
+model Session {
+  id            String        @id @default(cuid())
+  businessId    String
+  branchId      String?
+  endpointId    String
+  publicToken   String        @unique
+  status        SessionStatus @default(ACTIVE)
+  guestName     String?
+  guestPhone    String?
+  startedAt     DateTime      @default(now())
+  paidAt        DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  endpoint      Endpoint      @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  orders        Order[]
+  payments      Payment[]
+  @@index([endpointId, status])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  businessId  String
+  branchId    String?
+  sessionId   String
+  staffUserId String?
+  status      OrderStatus @default(OPEN)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch      Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  session     Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  staff       User?       @relation("OrderStaff", fields: [staffUserId], references: [id], onDelete: SetNull)
+  items       OrderItem[]
+  @@index([sessionId, status])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  unitPriceMinor Int
+  nameSnapshot String
+  paidQuantity Int      @default(0)
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  @@index([orderId])
+}
+
+model Payment {
+  id                 String          @id @default(cuid())
+  businessId         String
+  sessionId          String
+  provider           PaymentProvider
+  providerReference  String?
+  amountMinor        Int
+  currency           String
+  status             PaymentStatus   @default(CREATED)
+  phone              String?
+  idempotencyKey     String          @unique
+  selectedItemIds    String[]
+  allocation         Json?
+  providerPayload    Json?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  completedAt        DateTime?
+  business           Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  session            Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([sessionId, status])
+}
+
+model AnalyticsEvent {
+  id          String    @id @default(cuid())
+  businessId  String
+  endpointId  String?
+  sessionId   String?
+  eventName   String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  endpoint    Endpoint? @relation(fields: [endpointId], references: [id], onDelete: SetNull)
+  @@index([businessId, createdAt])
+  @@index([eventName, createdAt])
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  businessId  String
+  provider    String
+  type        String
+  active      Boolean  @default(false)
+  config      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  @@unique([businessId, provider, type])
+}
+
+model Subscription {
+  id          String           @id @default(cuid())
+  businessId  String           @unique
+  plan        SubscriptionPlan @default(SMART)
+  status      String           @default("TRIAL")
+  monthlyPriceMinor Int        @default(0)
+  startsAt    DateTime         @default(now())
+  endsAt      DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  businessId  String
+  branchId    String?
+  name        String
+  startsAt    DateTime
+  endsAt      DateTime?
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch      Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([businessId, createdAt])
+}
