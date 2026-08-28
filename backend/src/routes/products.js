@@ -22,9 +22,13 @@ router.post("/", asyncRoute(async (req, res) => {
     description: z.string().max(500).optional(),
     sku: z.string().max(80).optional(),
     price: z.number().nonnegative(),
-    currency: z.string().length(3).default("KES")
+    currency: z.string().length(3).optional()
   }).parse(req.body);
 
+  const business = await prisma.business.findUnique({
+    where: { id: req.auth.businessId },
+    select: { currency: true }
+  });
   const product = await prisma.product.create({
     data: {
       businessId: req.auth.businessId,
@@ -32,7 +36,7 @@ router.post("/", asyncRoute(async (req, res) => {
       description: data.description,
       sku: data.sku,
       priceMinor: toMinor(data.price),
-      currency: data.currency
+      currency: data.currency || business.currency
     }
   });
 

@@ -11,6 +11,15 @@ import { audit } from "../services/audit.js";
 const router = express.Router();
 router.use(authRequired);
 
+const actionProfileSchema = z.object({
+  reviewUrl: z.url().nullable().optional(),
+  whatsappUrl: z.url().nullable().optional(),
+  websiteUrl: z.url().nullable().optional(),
+  socialUrl: z.url().nullable().optional(),
+  directionsUrl: z.url().nullable().optional(),
+  allowOrdering: z.boolean().optional()
+}).strict();
+
 router.get("/", asyncRoute(async (req, res) => {
   const endpoints = await prisma.endpoint.findMany({
     where: { businessId: req.auth.businessId },
@@ -30,7 +39,7 @@ router.post("/", asyncRoute(async (req, res) => {
     code: z.string().min(1).max(50),
     type: z.enum(["TABLE", "ROOM", "PRODUCT", "SERVICE", "WAITER", "EVENT", "CUSTOM"]),
     branchId: z.string().nullable().optional(),
-    actionProfile: z.record(z.string(), z.any()).optional()
+    actionProfile: actionProfileSchema.optional()
   }).parse(req.body);
 
   if (data.branchId) {
@@ -64,6 +73,39 @@ router.post("/", asyncRoute(async (req, res) => {
     ...endpoint,
     publicUrl: `${env.PUBLIC_BASE_URL}/e/${endpoint.publicToken}`
   });
+}));
+
+router.patch("/:id", asyncRoute(async (req, res) => {
+  const data = z.object({
+    name: z.string().min(1).max(100).optional(),
+    code: z.string().min(1).max(50).optional(),
+    status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+    nfcEnabled: z.boolean().optional(),
+    qrEnabled: z.boolean().optional(),
+    branchId: z.string().nullable().optional(),
+    actionProfile: actionProfileSchema.nullable().optional()
+  }).strict().parse(req.body);
+
+  const endpoint = await prisma.endpoint.findFirst({
+    where: { id: req.params.id, businessId: req.auth.businessId }
+  });
+  if (!endpoint) return res.status(404).json({ error: "Endpoint not found" });
+
+  if (data.branchId) {
+    const branch = await prisma.branch.findFirst({ where: { id: data.branchId, businessId: req.auth.businessId } });
+    if (!branch) return res.status(400).json({ error: "Invalid branch" });
+  }
+
+  const updated = await prisma.endpoint.update({ where: { id: endpoint.id }, data });
+  await audit({
+    businessId: req.auth.businessId,
+    userId: req.auth.sub,
+    action: "ENDPOINT_UPDATED",
+    entityType: "Endpoint",
+    entityId: updated.id,
+    metadata: data
+  });
+  res.json({ ...updated, publicUrl: `${env.PUBLIC_BASE_URL}/e/${updated.publicToken}` });
 }));
 
 router.get("/:id/qr", asyncRoute(async (req, res) => {

@@ -4,6 +4,7 @@ export async function getSessionBill(sessionId) {
   const session = await prisma.session.findUnique({
     where: { id: sessionId },
     include: {
+      business: { select: { currency: true } },
       orders: {
         where: { status: { not: "CANCELLED" } },
         include: { items: true }
@@ -40,7 +41,7 @@ export async function getSessionBill(sessionId) {
       endpointId: session.endpointId,
       publicToken: session.publicToken
     },
-    currency: items[0]?.currency || null,
+    currency: session.business.currency,
     items,
     totalMinor
   };
@@ -65,7 +66,7 @@ export async function markSelectedItemsPaid(tx, selectedItemIds) {
 export async function closeSessionIfPaid(tx, sessionId) {
   const session = await tx.session.findUnique({
     where: { id: sessionId },
-    include: { orders: { include: { items: true } } }
+    include: { orders: { where: { status: { not: "CANCELLED" } }, include: { items: true } } }
   });
 
   if (!session) return null;

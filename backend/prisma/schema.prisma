@@ -49,6 +49,7 @@ enum PaymentStatus {
   FAILED
   CANCELLED
   EXPIRED
+  REQUIRES_REVIEW
 }
 
 enum PaymentProvider {
@@ -236,6 +237,7 @@ model Payment {
   phone              String?
   idempotencyKey     String          @unique
   selectedItemIds    String[]
+  allocation         Json?
   providerPayload    Json?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt

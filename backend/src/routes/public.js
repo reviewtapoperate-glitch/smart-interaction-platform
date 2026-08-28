@@ -8,6 +8,8 @@ import { getSessionBill } from "../services/billing.js";
 
 const router = express.Router();
 
+const endpointActions = ["REVIEW_CLICKED", "WHATSAPP_CLICKED", "WEBSITE_CLICKED", "SOCIAL_CLICKED", "DIRECTIONS_CLICKED"];
+
 router.get("/endpoint/:token", asyncRoute(async (req, res) => {
   const endpoint = await prisma.endpoint.findUnique({
     where: { publicToken: req.params.token },
@@ -47,6 +49,21 @@ router.get("/endpoint/:token", asyncRoute(async (req, res) => {
     },
     activeSession: activeSession ? { id: activeSession.id, status: activeSession.status } : null
   });
+}));
+
+router.post("/endpoint/:token/actions", asyncRoute(async (req, res) => {
+  const data = z.object({ action: z.enum(endpointActions) }).strict().parse(req.body);
+  const endpoint = await prisma.endpoint.findUnique({ where: { publicToken: req.params.token } });
+  if (!endpoint || endpoint.status !== "ACTIVE") {
+    return res.status(404).json({ error: "Endpoint not found or inactive" });
+  }
+
+  await recordEvent({
+    businessId: endpoint.businessId,
+    endpointId: endpoint.id,
+    eventName: data.action
+  });
+  res.status(201).json({ recorded: true });
 }));
 
 router.post("/endpoint/:token/session", asyncRoute(async (req, res) => {

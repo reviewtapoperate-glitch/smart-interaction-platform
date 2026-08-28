@@ -4,8 +4,11 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
+import { API_ROOT } from "../../contract/api-contract.js";
 
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
@@ -20,6 +23,9 @@ import integrationsRouter from "./routes/integrations.js";
 
 const app = express();
 const httpServer = createServer(app);
+const dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDir = path.resolve(dirname, "../../frontend/public");
+const contractFile = path.resolve(dirname, "../../contract/api-contract.js");
 
 const io = new Server(httpServer, {
   cors: {
@@ -38,24 +44,26 @@ app.use(cors({
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
-app.get("/", (_req, res) => {
+app.get("/api-contract.js", (_req, res) => res.sendFile(contractFile));
+
+app.get(`${API_ROOT}`, (_req, res) => {
   res.json({
-    service: "Smart Interaction Platform",
-    version: "1.0.0",
+    service: "ReviewTap",
+    version: "1.1.0",
     status: "ready"
   });
 });
 
-app.use("/api/health", healthRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/business", businessRouter);
-app.use("/api/products", productsRouter);
-app.use("/api/endpoints", endpointsRouter);
-app.use("/api/public", publicRouter);
-app.use("/api/payments", paymentsRouter);
-app.use("/api/analytics", analyticsRouter);
-app.use("/api/events", eventsRouter);
-app.use("/api/integrations", integrationsRouter);
+app.use(`${API_ROOT}/health`, healthRouter);
+app.use(`${API_ROOT}/auth`, authRouter);
+app.use(`${API_ROOT}/business`, businessRouter);
+app.use(`${API_ROOT}/products`, productsRouter);
+app.use(`${API_ROOT}/endpoints`, endpointsRouter);
+app.use(`${API_ROOT}/public`, publicRouter);
+app.use(`${API_ROOT}/payments`, paymentsRouter);
+app.use(`${API_ROOT}/analytics`, analyticsRouter);
+app.use(`${API_ROOT}/events`, eventsRouter);
+app.use(`${API_ROOT}/integrations`, integrationsRouter);
 
 io.on("connection", socket => {
   socket.on("session:join", ({ sessionId }) => {
@@ -75,6 +83,12 @@ app.use((err, _req, res, _next) => {
 
   res.status(status).json({ error: message });
 });
+
+app.use(express.static(frontendDir, { index: false }));
+app.get("/", (_req, res) => res.sendFile(path.join(frontendDir, "index.html")));
+app.get("/e/:token", (_req, res) => res.sendFile(path.join(frontendDir, "endpoint.html")));
+app.get("/s/:token", (_req, res) => res.sendFile(path.join(frontendDir, "session.html")));
+app.get("/app.html", (_req, res) => res.sendFile(path.join(frontendDir, "app.html")));
 
 const server = httpServer.listen(env.PORT, () => {
   console.log(`Backend running on port ${env.PORT}`);
