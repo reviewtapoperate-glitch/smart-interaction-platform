@@ -1,0 +1,69 @@
+import { prisma } from "../config/prisma.js";
+
+export async function ensurePlatformTables() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "OnboardingRequest" (
+      "id" TEXT PRIMARY KEY,
+      "businessId" TEXT NOT NULL UNIQUE,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "businessType" TEXT,
+      "operations" JSONB NOT NULL DEFAULT '{}'::jsonb,
+      "integrations" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "payments" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "hardware" JSONB NOT NULL DEFAULT '{}'::jsonb,
+      "locations" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "staff" JSONB NOT NULL DEFAULT '{}'::jsonb,
+      "notes" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "OnboardingRequest_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "Business"("id") ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS "Quote" (
+      "id" TEXT PRIMARY KEY,
+      "businessId" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "currency" TEXT NOT NULL DEFAULT 'KES',
+      "subtotalMinor" INTEGER NOT NULL DEFAULT 0,
+      "setupMinor" INTEGER NOT NULL DEFAULT 0,
+      "monthlyMinor" INTEGER NOT NULL DEFAULT 0,
+      "notes" TEXT,
+      "items" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "sentAt" TIMESTAMP(3),
+      "acceptedAt" TIMESTAMP(3),
+      CONSTRAINT "Quote_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "Business"("id") ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS "Quote_businessId_idx" ON "Quote"("businessId");
+    CREATE TABLE IF NOT EXISTS "NfcTag" (
+      "id" TEXT PRIMARY KEY,
+      "businessId" TEXT,
+      "endpointId" TEXT,
+      "inventoryCode" TEXT NOT NULL UNIQUE,
+      "status" TEXT NOT NULL DEFAULT 'UNASSIGNED',
+      "writeUrl" TEXT,
+      "writtenAt" TIMESTAMP(3),
+      "testedAt" TIMESTAMP(3),
+      "deployedAt" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "NfcTag_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "Business"("id") ON DELETE SET NULL,
+      CONSTRAINT "NfcTag_endpointId_fkey" FOREIGN KEY ("endpointId") REFERENCES "Endpoint"("id") ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS "NfcTag_businessId_idx" ON "NfcTag"("businessId");
+    CREATE TABLE IF NOT EXISTS "PlatformService" (
+      "id" TEXT PRIMARY KEY,
+      "businessId" TEXT,
+      "name" TEXT NOT NULL,
+      "category" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'REQUESTED',
+      "amountMinor" INTEGER NOT NULL DEFAULT 0,
+      "currency" TEXT NOT NULL DEFAULT 'KES',
+      "notes" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "PlatformService_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "Business"("id") ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS "PlatformService_businessId_idx" ON "PlatformService"("businessId");
+  `);
+}
