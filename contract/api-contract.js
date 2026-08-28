@@ -5,7 +5,8 @@ export const API = Object.freeze({
   auth: { register: { method: "POST", path: "/auth/register", auth: "none" }, login: { method: "POST", path: "/auth/login", auth: "none" } },
   business: {
     get: { method: "GET", path: "/business/me", auth: "bearer" }, update: { method: "PATCH", path: "/business/me", auth: "bearer" },
-    branches: { method: "GET", path: "/business/branches", auth: "bearer" }, createBranch: { method: "POST", path: "/business/branches", auth: "bearer" }, staff: { method: "GET", path: "/business/staff", auth: "bearer" }
+    branches: { method: "GET", path: "/business/branches", auth: "bearer" }, createBranch: { method: "POST", path: "/business/branches", auth: "bearer" }, staff: { method: "GET", path: "/business/staff", auth: "bearer" },
+    sessions: { method: "GET", path: "/business/sessions", auth: "bearer" }, orders: { method: "GET", path: "/business/orders", auth: "bearer" }, payments: { method: "GET", path: "/business/payments", auth: "bearer" }
   },
   products: { list: { method: "GET", path: "/products", auth: "bearer" }, create: { method: "POST", path: "/products", auth: "bearer" }, update: { method: "PATCH", path: "/products/:id", auth: "bearer" } },
   endpoints: { list: { method: "GET", path: "/endpoints", auth: "bearer" }, create: { method: "POST", path: "/endpoints", auth: "bearer" }, update: { method: "PATCH", path: "/endpoints/:id", auth: "bearer" }, qr: { method: "GET", path: "/endpoints/:id/qr", auth: "bearer", response: "image/png" } },
@@ -15,10 +16,6 @@ export const API = Object.freeze({
   payments: { request: { method: "POST", path: "/payments/session/:token/request", auth: "none", idempotency: true, provider: "MPESA" }, get: { method: "GET", path: "/payments/:paymentId", auth: "none" }, mpesaCallback: { method: "POST", path: "/payments/mpesa/callback", auth: "provider" } },
   events: { list: { method: "GET", path: "/events", auth: "bearer" }, create: { method: "POST", path: "/events", auth: "bearer" } },
   integrations: { list: { method: "GET", path: "/integrations", auth: "bearer" }, create: { method: "POST", path: "/integrations", auth: "bearer" } },
-  platformAdmin: {
-    overview: { method: "GET", path: "/_platform-admin/overview", auth: "admin-key" }, businesses: { method: "GET", path: "/_platform-admin/businesses", auth: "admin-key" },
-    onboarding: { method: "GET", path: "/_platform-admin/onboarding", auth: "admin-key" }, createQuote: { method: "POST", path: "/_platform-admin/quotes", auth: "admin-key" }, updateQuote: { method: "PATCH", path: "/_platform-admin/quotes/:id", auth: "admin-key" },
-    nfc: { method: "GET", path: "/_platform-admin/nfc", auth: "admin-key" }, createNfc: { method: "POST", path: "/_platform-admin/nfc", auth: "admin-key" }, updateNfc: { method: "PATCH", path: "/_platform-admin/nfc/:id", auth: "admin-key" }
-  }
+  platformAdmin: { overview: { method: "GET", path: "/_platform-admin/overview", auth: "admin-key" }, businesses: { method: "GET", path: "/_platform-admin/businesses", auth: "admin-key" }, onboarding: { method: "GET", path: "/_platform-admin/onboarding", auth: "admin-key" }, createQuote: { method: "POST", path: "/_platform-admin/quotes", auth: "admin-key" }, updateQuote: { method: "PATCH", path: "/_platform-admin/quotes/:id", auth: "admin-key" }, nfc: { method: "GET", path: "/_platform-admin/nfc", auth: "admin-key" }, createNfc: { method: "POST", path: "/_platform-admin/nfc", auth: "admin-key" }, updateNfc: { method: "PATCH", path: "/_platform-admin/nfc/:id", auth: "admin-key" } }
 });
 export function apiPath(route, params = {}) { return `${API_ROOT}${route.path.replace(/:([A-Za-z][A-Za-z0-9_]*)/g, (_match, key) => { if (params[key] === undefined || params[key] === null) throw new Error(`Missing route parameter: ${key}`); return encodeURIComponent(params[key]); })}`; }
