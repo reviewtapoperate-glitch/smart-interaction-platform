@@ -6,7 +6,7 @@ const schema = z.object({
   NODE_ENV: z.string().default("development"),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
-  PLATFORM_ADMIN_KEY: z.string().min(32),
+  PLATFORM_ADMIN_KEY: z.string().min(32).optional().default(""),
   PUBLIC_BASE_URL: z.string().url(),
   FRONTEND_URL: z.string().url(),
   MPESA_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
@@ -18,3 +18,4 @@ const schema = z.object({
 });
 
 export const env = schema.parse(process.env);
+export const platformAdminKey = env.PLATFORM_ADMIN_KEY || env.JWT_SECRET;
