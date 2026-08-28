@@ -35,6 +35,7 @@ app.use(cors({ origin: env.FRONTEND_URL, credentials: false }));
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 app.get("/api-contract.js", (_req, res) => res.sendFile(contractFile));
+app.get("/favicon.ico", (_req, res) => res.redirect(302, "/favicon.svg"));
 app.get(`${API_ROOT}`, (_req, res) => res.json({ service: "ReviewTap", version: "1.2.0", status: "ready" }));
 app.use(`${API_ROOT}/health`, healthRouter);
 app.use(`${API_ROOT}/auth`, authRouter);
