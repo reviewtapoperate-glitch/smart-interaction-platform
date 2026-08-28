@@ -25,35 +25,72 @@ function renderPricing() {
   const currency = document.getElementById("currency").value;
   document.getElementById("pricingGrid").innerHTML = Object.entries(packages).map(([id, plan], index) => {
     const amount = plan.price === null ? "Custom" : new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(plan.price * rates[currency]);
-    return `<article class="price ${index === 1 ? "featured" : ""}"><div class="eyebrow">${plan.name.toUpperCase()}</div><div class="amount">${amount}</div><p>${plan.cards ? `${plan.cards} card${plan.cards > 1 ? "s" : ""} included` : "Tailored rollout"}</p><ul><li>NFC + QR</li><li>Custom branding</li><li>Smart link: ${plan.smart ? "Yes" : "—"}</li><li>Analytics: ${plan.analytics ? "Yes" : "—"}</li><li>Multi-location: ${plan.multi ? "Yes" : "—"}</li></ul><button class="primary" data-plan="${id}">Choose ${plan.name}</button></article>`;
+    return `<article class="price ${index === 1 ? "featured" : ""}"><div class="eyebrow">${plan.name.toUpperCase()}</div><div class="amount">${amount}</div><p>${plan.cards ? `${plan.cards} card${plan.cards > 1 ? "s" : ""} included` : "Tailored rollout"}</p><ul><li>NFC + QR</li><li>Custom branding</li><li>Smart link: ${plan.smart ? "Yes" : "—"}</li><li>Analytics: ${plan.analytics ? "Yes" : "—"}</li><li>Multi-location: ${plan.multi ? "Yes" : "—"}</li></ul><button type="button" class="primary" data-plan="${id}">Choose ${plan.name}</button></article>`;
   }).join("");
   document.querySelectorAll("[data-plan]").forEach(button => button.addEventListener("click", () => openAuth("register")));
 }
 
-window.openAuth = nextMode => {
+function openAuth(nextMode = "login") {
   mode = nextMode;
-  document.getElementById("auth").classList.add("open");
-  document.getElementById("authTitle").textContent = mode === "login" ? "Welcome back" : "Create your account";
-  document.getElementById("authSubmit").textContent = mode === "login" ? "Login" : "Create account";
-  document.getElementById("name").style.display = mode === "login" ? "none" : "block";
-  document.getElementById("ownerName").style.display = mode === "login" ? "none" : "block";
-  document.getElementById("authMsg").textContent = "";
-};
-window.closeAuth = () => document.getElementById("auth").classList.remove("open");
-
-document.getElementById("authForm").addEventListener("submit", async event => {
-  event.preventDefault();
+  const auth = document.getElementById("auth");
+  const authTitle = document.getElementById("authTitle");
+  const authSubmit = document.getElementById("authSubmit");
+  const nameField = document.getElementById("name");
+  const ownerNameField = document.getElementById("ownerName");
   const message = document.getElementById("authMsg");
-  try {
-    const payload = mode === "login"
-      ? await request(API.auth.login, { email: email.value, password: password.value })
-      : await request(API.auth.register, { businessName: name.value, name: ownerName.value || name.value, email: email.value, password: password.value });
-    localStorage.setItem(tokenKey, payload.token);
-    location.assign("/app.html");
-  } catch (error) {
-    message.textContent = error.message;
-  }
+
+  auth.classList.add("open");
+  authTitle.textContent = mode === "login" ? "Welcome back" : "Create your account";
+  authSubmit.textContent = mode === "login" ? "Login" : "Create account";
+  nameField.style.display = mode === "login" ? "none" : "block";
+  ownerNameField.style.display = mode === "login" ? "none" : "block";
+  nameField.required = mode === "register";
+  ownerNameField.required = mode === "register";
+  message.textContent = "";
+}
+
+function closeAuth() {
+  document.getElementById("auth").classList.remove("open");
+}
+
+const authForm = document.getElementById("authForm");
+const emailField = document.getElementById("email");
+const passwordField = document.getElementById("password");
+const nameField = document.getElementById("name");
+const ownerNameField = document.getElementById("ownerName");
+const authMessage = document.getElementById("authMsg");
+
+if (authForm) {
+  authForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    authMessage.textContent = "Working…";
+    const body = mode === "login"
+      ? { email: emailField.value.trim(), password: passwordField.value }
+      : {
+          businessName: nameField.value.trim(),
+          name: ownerNameField.value.trim() || nameField.value.trim(),
+          email: emailField.value.trim(),
+          password: passwordField.value
+        };
+
+    try {
+      const payload = await request(mode === "login" ? API.auth.login : API.auth.register, body);
+      localStorage.setItem(tokenKey, payload.token);
+      window.location.assign("/app.html");
+    } catch (error) {
+      authMessage.textContent = error.message;
+    }
+  });
+}
+
+document.getElementById("loginButton")?.addEventListener("click", () => openAuth("login"));
+document.getElementById("getStartedButton")?.addEventListener("click", () => openAuth("register"));
+document.getElementById("authClose")?.addEventListener("click", closeAuth);
+document.getElementById("menuButton")?.addEventListener("click", () => document.querySelector(".navlinks")?.classList.toggle("show"));
+document.getElementById("currency")?.addEventListener("change", renderPricing);
+
+document.getElementById("auth")?.addEventListener("click", event => {
+  if (event.target.id === "auth") closeAuth();
 });
 
-document.getElementById("currency").addEventListener("change", renderPricing);
 renderPricing();
