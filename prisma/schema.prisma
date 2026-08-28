@@ -212,38 +212,38 @@ model Order {
 }
 
 model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  productId   String
-  quantity    Int
+  id             String   @id @default(cuid())
+  orderId        String
+  productId      String
+  quantity       Int
   unitPriceMinor Int
-  nameSnapshot String
-  paidQuantity Int      @default(0)
-  createdAt   DateTime @default(now())
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  nameSnapshot   String
+  paidQuantity   Int      @default(0)
+  createdAt      DateTime @default(now())
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
   @@index([orderId])
 }
 
 model Payment {
-  id                 String          @id @default(cuid())
-  businessId         String
-  sessionId          String
-  provider           PaymentProvider
-  providerReference  String?
-  amountMinor        Int
-  currency           String
-  status             PaymentStatus   @default(CREATED)
-  phone              String?
-  idempotencyKey     String          @unique
-  selectedItemIds    String[]
-  allocation         Json?
-  providerPayload    Json?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  completedAt        DateTime?
-  business           Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  session            Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id                String          @id @default(cuid())
+  businessId        String
+  sessionId         String
+  provider          PaymentProvider
+  providerReference String?
+  amountMinor       Int
+  currency          String
+  status            PaymentStatus   @default(CREATED)
+  phone             String?
+  idempotencyKey    String          @unique
+  selectedItemIds   String[]
+  allocation        Json?
+  providerPayload   Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  completedAt       DateTime?
+  business          Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  session           Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   @@index([sessionId, status])
 }
 
@@ -275,30 +275,30 @@ model Integration {
 }
 
 model Subscription {
-  id          String           @id @default(cuid())
-  businessId  String           @unique
-  plan        SubscriptionPlan @default(SMART)
-  status      String           @default("TRIAL")
-  monthlyPriceMinor Int        @default(0)
-  startsAt    DateTime         @default(now())
-  endsAt      DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id                String           @id @default(cuid())
+  businessId        String           @unique
+  plan              SubscriptionPlan @default(SMART)
+  status            String           @default("TRIAL")
+  monthlyPriceMinor Int              @default(0)
+  startsAt          DateTime         @default(now())
+  endsAt            DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  business          Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Event {
-  id          String      @id @default(cuid())
-  businessId  String
-  branchId    String?
-  name        String
-  startsAt    DateTime
-  endsAt      DateTime?
-  status      EventStatus @default(DRAFT)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  branch      Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  id         String      @id @default(cuid())
+  businessId String
+  branchId   String?
+  name       String
+  startsAt   DateTime
+  endsAt     DateTime?
+  status     EventStatus @default(DRAFT)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch     Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
 }
 
 model AuditLog {
@@ -313,4 +313,71 @@ model AuditLog {
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   @@index([businessId, createdAt])
+}
+
+// These platform provisioning tables are created and maintained with explicit
+// SQL in src/services/platform.js. They are intentionally ignored by Prisma's
+// schema synchronizer so `prisma db push` can never drop existing provisioning
+// data during a deployment.
+model OnboardingRequest {
+  id           String   @id
+  businessId   String   @unique
+  status       String   @default("DRAFT")
+  businessType String?
+  operations   Json     @default("{}")
+  integrations Json     @default("[]")
+  payments     Json     @default("[]")
+  hardware     Json     @default("{}")
+  locations    Json     @default("[]")
+  staff        Json     @default("{}")
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+  @@ignore
+}
+
+model Quote {
+  id            String   @id
+  businessId    String
+  status        String   @default("DRAFT")
+  currency      String   @default("KES")
+  subtotalMinor Int      @default(0)
+  setupMinor    Int      @default(0)
+  monthlyMinor  Int      @default(0)
+  notes         String?
+  items         Json     @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+  sentAt        DateTime?
+  acceptedAt    DateTime?
+  @@ignore
+}
+
+model NfcTag {
+  id            String   @id
+  businessId    String?
+  endpointId    String?
+  inventoryCode String   @unique
+  status        String   @default("UNASSIGNED")
+  writeUrl      String?
+  writtenAt     DateTime?
+  testedAt      DateTime?
+  deployedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now())
+  @@ignore
+}
+
+model PlatformService {
+  id          String   @id
+  businessId  String?
+  name        String
+  category    String
+  status      String   @default("REQUESTED")
+  amountMinor Int      @default(0)
+  currency    String   @default("KES")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  @@ignore
 }
