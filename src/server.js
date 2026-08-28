@@ -65,7 +65,7 @@ app.get("/", (_req, res) => res.sendFile(path.join(frontendDir, "index.html")));
 app.get("/e/:token", (_req, res) => res.sendFile(path.join(frontendDir, "endpoint.html")));
 app.get("/s/:token", (_req, res) => res.sendFile(path.join(frontendDir, "session.html")));
 app.get("/app.html", (_req, res) => res.sendFile(path.join(frontendDir, "app.html")));
-app.get("/_rt-admin", (_req, res) => res.sendFile(path.join(frontendDir, "admin.html"));
+app.get("/_rt-admin", (_req, res) => res.sendFile(path.join(frontendDir, "admin.html")));
 
 async function start() {
   await ensurePlatformTables();
