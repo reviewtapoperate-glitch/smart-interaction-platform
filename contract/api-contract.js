@@ -1,54 +1,24 @@
-/**
- * The only API route catalogue for ReviewTap. Browser code imports this file
- * at /api-contract.js and the Express server imports it directly.
- */
+/** Canonical ReviewTap API catalogue shared by browser and server. */
 export const API_ROOT = "/api";
-
 export const API = Object.freeze({
   health: { method: "GET", path: "/health", auth: "none" },
-  auth: {
-    register: { method: "POST", path: "/auth/register", auth: "none" },
-    login: { method: "POST", path: "/auth/login", auth: "none" }
-  },
+  auth: { register: { method: "POST", path: "/auth/register", auth: "none" }, login: { method: "POST", path: "/auth/login", auth: "none" } },
   business: {
-    get: { method: "GET", path: "/business/me", auth: "bearer" },
-    update: { method: "PATCH", path: "/business/me", auth: "bearer" },
-    branches: { method: "GET", path: "/business/branches", auth: "bearer" },
-    createBranch: { method: "POST", path: "/business/branches", auth: "bearer" },
-    staff: { method: "GET", path: "/business/staff", auth: "bearer" }
+    get: { method: "GET", path: "/business/me", auth: "bearer" }, update: { method: "PATCH", path: "/business/me", auth: "bearer" },
+    branches: { method: "GET", path: "/business/branches", auth: "bearer" }, createBranch: { method: "POST", path: "/business/branches", auth: "bearer" }, staff: { method: "GET", path: "/business/staff", auth: "bearer" }
   },
-  products: {
-    list: { method: "GET", path: "/products", auth: "bearer" },
-    create: { method: "POST", path: "/products", auth: "bearer" },
-    update: { method: "PATCH", path: "/products/:id", auth: "bearer" }
-  },
-  endpoints: {
-    list: { method: "GET", path: "/endpoints", auth: "bearer" },
-    create: { method: "POST", path: "/endpoints", auth: "bearer" },
-    update: { method: "PATCH", path: "/endpoints/:id", auth: "bearer" },
-    qr: { method: "GET", path: "/endpoints/:id/qr", auth: "bearer", response: "image/png" }
-  },
+  products: { list: { method: "GET", path: "/products", auth: "bearer" }, create: { method: "POST", path: "/products", auth: "bearer" }, update: { method: "PATCH", path: "/products/:id", auth: "bearer" } },
+  endpoints: { list: { method: "GET", path: "/endpoints", auth: "bearer" }, create: { method: "POST", path: "/endpoints", auth: "bearer" }, update: { method: "PATCH", path: "/endpoints/:id", auth: "bearer" }, qr: { method: "GET", path: "/endpoints/:id/qr", auth: "bearer", response: "image/png" } },
   analytics: { summary: { method: "GET", path: "/analytics/summary", auth: "bearer" } },
-  public: {
-    endpoint: { method: "GET", path: "/public/endpoint/:token", auth: "none" },
-    action: { method: "POST", path: "/public/endpoint/:token/actions", auth: "none" },
-    startSession: { method: "POST", path: "/public/endpoint/:token/session", auth: "none" },
-    session: { method: "GET", path: "/public/session/:token", auth: "none" },
-    products: { method: "GET", path: "/public/session/:token/products", auth: "none" },
-    order: { method: "POST", path: "/public/session/:token/orders", auth: "none" }
-  },
-  payments: {
-    request: { method: "POST", path: "/payments/session/:token/request", auth: "none", idempotency: true, provider: "MPESA" },
-    get: { method: "GET", path: "/payments/:paymentId", auth: "none" },
-    mpesaCallback: { method: "POST", path: "/payments/mpesa/callback", auth: "provider" }
-  },
+  onboarding: { get: { method: "GET", path: "/onboarding/me", auth: "bearer" }, save: { method: "PUT", path: "/onboarding/me", auth: "bearer" }, quotes: { method: "GET", path: "/onboarding/quotes", auth: "bearer" }, acceptQuote: { method: "POST", path: "/onboarding/quotes/:id/accept", auth: "bearer" } },
+  public: { endpoint: { method: "GET", path: "/public/endpoint/:token", auth: "none" }, action: { method: "POST", path: "/public/endpoint/:token/actions", auth: "none" }, startSession: { method: "POST", path: "/public/endpoint/:token/session", auth: "none" }, session: { method: "GET", path: "/public/session/:token", auth: "none" }, products: { method: "GET", path: "/public/session/:token/products", auth: "none" }, order: { method: "POST", path: "/public/session/:token/orders", auth: "none" } },
+  payments: { request: { method: "POST", path: "/payments/session/:token/request", auth: "none", idempotency: true, provider: "MPESA" }, get: { method: "GET", path: "/payments/:paymentId", auth: "none" }, mpesaCallback: { method: "POST", path: "/payments/mpesa/callback", auth: "provider" } },
   events: { list: { method: "GET", path: "/events", auth: "bearer" }, create: { method: "POST", path: "/events", auth: "bearer" } },
-  integrations: { list: { method: "GET", path: "/integrations", auth: "bearer" }, create: { method: "POST", path: "/integrations", auth: "bearer" } }
+  integrations: { list: { method: "GET", path: "/integrations", auth: "bearer" }, create: { method: "POST", path: "/integrations", auth: "bearer" } },
+  platformAdmin: {
+    overview: { method: "GET", path: "/_platform-admin/overview", auth: "admin-key" }, businesses: { method: "GET", path: "/_platform-admin/businesses", auth: "admin-key" },
+    onboarding: { method: "GET", path: "/_platform-admin/onboarding", auth: "admin-key" }, createQuote: { method: "POST", path: "/_platform-admin/quotes", auth: "admin-key" }, updateQuote: { method: "PATCH", path: "/_platform-admin/quotes/:id", auth: "admin-key" },
+    nfc: { method: "GET", path: "/_platform-admin/nfc", auth: "admin-key" }, createNfc: { method: "POST", path: "/_platform-admin/nfc", auth: "admin-key" }, updateNfc: { method: "PATCH", path: "/_platform-admin/nfc/:id", auth: "admin-key" }
+  }
 });
-
-export function apiPath(route, params = {}) {
-  return `${API_ROOT}${route.path.replace(/:([A-Za-z][A-Za-z0-9_]*)/g, (_match, key) => {
-    if (params[key] === undefined || params[key] === null) throw new Error(`Missing route parameter: ${key}`);
-    return encodeURIComponent(params[key]);
-  })}`;
-}
+export function apiPath(route, params = {}) { return `${API_ROOT}${route.path.replace(/:([A-Za-z][A-Za-z0-9_]*)/g, (_match, key) => { if (params[key] === undefined || params[key] === null) throw new Error(`Missing route parameter: ${key}`); return encodeURIComponent(params[key]); })}`; }
