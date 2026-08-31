@@ -29,7 +29,9 @@ for (const file of htmlFiles) {
   if (!html.includes("/styles.css")) throw new Error(`${file} does not load /styles.css`);
 }
 
-const dist = path.resolve(new URL("../dist/", import.meta.url).pathname);
+// Render is configured to publish frontend/dist. The build script itself lives in
+// frontend/, so the publish directory must be created inside frontend/ (not repo/dist).
+const dist = path.resolve(new URL("./dist/", import.meta.url).pathname);
 fs.rmSync(dist, { recursive: true, force: true });
 fs.cpSync(root, dist, { recursive: true });
 
