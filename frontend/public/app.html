@@ -1,18 +1,65 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ReviewTap Business Portal</title><link rel="stylesheet" href="/styles.css"></head>
-<body>
-<nav><a class="logo" href="/">Review<span>Tap</span></a><div><button class="ghost" id="logout">Logout</button></div></nav>
-<main class="section">
-  <div class="eyebrow">BUSINESS PORTAL</div><h1 id="welcome">Your ReviewTap workspace</h1><p class="lead">Configure your business, choose what you need, manage deployment and operate everything from one workspace.</p><p id="message" role="status"></p>
-  <div id="stats" class="pricing"></div>
-  <div class="cards" style="grid-template-columns:repeat(2,1fr);margin-top:30px">
-    <article><h3>Business profile</h3><form id="businessForm"><input id="businessName" placeholder="Business name" required><input id="websiteUrl" placeholder="Website URL"><input id="googleBusinessUrl" placeholder="Google review URL"><input id="currency" placeholder="Currency (KES)" maxlength="3"><input id="timezone" placeholder="Timezone"><button class="primary">Save business</button></form></article>
-    <article><h3>Choose how your business operates</h3><form id="configForm"><label>Business type<select id="businessType"><option>Restaurant</option><option>Hotel</option><option>Bar</option><option>Cafe</option><option>Retail</option><option>Salon</option><option>Spa</option><option>Clinic</option><option>Professional services</option><option>Events</option><option>Corporate</option><option>Custom</option></select></label><div class="checkgrid"><label><input type="checkbox" data-op="reviews"> Reviews</label><label><input type="checkbox" data-op="whatsapp"> WhatsApp</label><label><input type="checkbox" data-op="ordering"> Ordering</label><label><input type="checkbox" data-op="reservations"> Reservations</label><label><input type="checkbox" data-op="appointments"> Appointments</label><label><input type="checkbox" data-op="serviceRequests"> Service requests</label><label><input type="checkbox" data-op="staff"> Staff management</label><label><input type="checkbox" data-op="events"> Events</label><label><input type="checkbox" data-op="analytics"> Analytics</label><label><input type="checkbox" data-op="crm"> CRM</label><label><input type="checkbox" data-op="pos"> POS</label><label><input type="checkbox" data-op="pms"> PMS</label><label><input type="checkbox" data-op="inventory"> Inventory</label><label><input type="checkbox" data-op="loyalty"> Loyalty</label></div><h4>Payments</h4><div class="checkgrid" id="paymentChoices"><label><input type="checkbox" value="MPESA"> M-Pesa</label><label><input type="checkbox" value="STRIPE"> Stripe</label><label><input type="checkbox" value="PAYSTACK"> Paystack</label><label><input type="checkbox" value="FLUTTERWAVE"> Flutterwave</label><label><input type="checkbox" value="PESAPAL"> PesaPal</label><label><input type="checkbox" value="PAYPAL"> PayPal</label><label><input type="checkbox" value="CARD"> Card</label><label><input type="checkbox" value="BANK_TRANSFER"> Bank transfer</label><label><input type="checkbox" value="CASH"> Cash</label></div><h4>Integrations</h4><div class="checkgrid" id="integrationChoices"><label><input type="checkbox" value="POS"> POS</label><label><input type="checkbox" value="PMS"> PMS</label><label><input type="checkbox" value="CRM"> CRM</label><label><input type="checkbox" value="ACCOUNTING"> Accounting</label><label><input type="checkbox" value="INVENTORY"> Inventory</label><label><input type="checkbox" value="WHATSAPP"> WhatsApp</label><label><input type="checkbox" value="EMAIL"> Email</label><label><input type="checkbox" value="SMS"> SMS</label></div><h4>Hardware</h4><label><input id="nfcRequired" type="checkbox"> NFC</label> <label><input id="qrRequired" type="checkbox" checked> QR</label><input id="hardwareQuantity" type="number" min="0" placeholder="Number of physical endpoints"><input id="locationList" placeholder="Locations, comma separated"><button class="primary">Submit configuration for quote</button></form></article>
-  </div>
-  <section class="portal-section"><h2>Quote & onboarding</h2><div id="quotes">No quote yet.</div></section>
-  <section class="portal-section"><h2>Smart endpoints</h2><form id="endpointForm" class="inline-form"><input id="endpointName" placeholder="Endpoint name" required><input id="endpointCode" placeholder="Unique code" required><select id="endpointType"><option>TABLE</option><option>ROOM</option><option>PRODUCT</option><option>SERVICE</option><option>WAITER</option><option>EVENT</option><option>CUSTOM</option></select><label><input id="allowOrdering" type="checkbox"> Ordering</label><button class="primary">Create</button></form><div id="endpoints"></div></section>
-  <section class="portal-section"><h2>Catalogue</h2><form id="productForm" class="inline-form"><input id="productName" placeholder="Product/service name" required><input id="productPrice" type="number" min="0" step="0.01" placeholder="Price" required><button class="primary">Add</button></form><div id="products"></div></section>
-  <section class="portal-section"><h2>Locations</h2><form id="branchForm" class="inline-form"><input id="branchName" placeholder="Location name" required><input id="branchCode" placeholder="Code" required><input id="branchAddress" placeholder="Address"><button class="primary">Add</button></form><div id="branches"></div></section>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr);margin-top:30px"><article><h3>Sessions</h3><div id="sessions"></div></article><article><h3>Orders</h3><div id="orders"></div></article><article><h3>Payments</h3><div id="payments"></div></article></div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr);margin-top:30px"><article><h3>Staff</h3><div id="staff"></div></article><article><h3>Events</h3><div id="events"></div></article><article><h3>Integrations</h3><div id="integrations"></div></article></div>
-</main><script type="module" src="/portal.js"></script></body></html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ReviewTap Business Portal</title><link rel="stylesheet" href="/styles.css"></head>
+<body class="portal-body">
+<nav class="portal-nav"><a class="logo" href="/">Review<span>Tap</span></a><div class="portal-navlinks"><a href="#overview">Overview</a><a href="#setup">Setup</a><a href="#experience">Customer touchpoints</a><a href="#operations">Activity</a><a href="#insights" id="insightsNav" class="conditional-nav">Insights</a></div><button class="ghost" id="logout">Logout</button></nav>
+<main class="section portal-shell">
+  <header class="portal-head"><div><div class="eyebrow">BUSINESS WORKSPACE</div><h1 id="welcome">Your business</h1><p class="lead">A simple place to set up and manage your ReviewTap customer experience.</p></div><div id="statusPill" class="status-pill">Setup in progress</div></header>
+  <p id="message" role="status"></p>
+
+  <section id="overview" class="dashboard-section">
+    <div id="nextAction" class="next-action"></div>
+    <div id="stats" class="portal-metrics"></div>
+    <div class="quick-actions" id="quickActions"></div>
+    <div class="dashboard-columns">
+      <article class="dashboard-card"><div class="section-kicker">YOUR REVIEWTAP</div><h2>What you have enabled</h2><div id="featureCards" class="feature-grid"></div></article>
+      <article class="dashboard-card"><div class="section-kicker">RECENT</div><h2>Recent activity</h2><div id="recentActivity" class="activity-list"></div></article>
+    </div>
+  </section>
+
+  <details id="setup" class="dashboard-section portal-panel setup-accordion">
+    <summary><span class="section-kicker">SETUP</span> Business setup</summary>
+    <div class="section-heading"><div><h2>Tell us how your business operates</h2><p>Only configure what you want ReviewTap to handle.</p></div></div>
+    <div class="setup-grid">
+      <article class="dashboard-card"><h3>Business details</h3><form id="businessForm"><input id="businessName" placeholder="Business name" required><input id="websiteUrl" placeholder="Website URL"><input id="googleBusinessUrl" placeholder="Google review URL"><input id="currency" placeholder="Currency (KES)" maxlength="3"><input id="timezone" placeholder="Timezone"><button class="primary">Save business</button></form></article>
+      <article class="dashboard-card"><h3>Services, payments and hardware</h3><form id="configForm">
+        <label>Business type<select id="businessType"><option>Restaurant</option><option>Hotel</option><option>Bar</option><option>Cafe</option><option>Retail</option><option>Salon</option><option>Spa</option><option>Clinic</option><option>Professional services</option><option>Events</option><option>Corporate</option><option>Custom</option></select></label>
+        <details class="setup-accordion"><summary>Customer experiences</summary><div class="checkgrid"><label><input type="checkbox" data-op="reviews"> Reviews</label><label><input type="checkbox" data-op="whatsapp"> WhatsApp</label><label><input type="checkbox" data-op="ordering"> Ordering</label><label><input type="checkbox" data-op="reservations"> Reservations</label><label><input type="checkbox" data-op="appointments"> Appointments</label><label><input type="checkbox" data-op="serviceRequests"> Service requests</label><label><input type="checkbox" data-op="staff"> Staff management</label><label><input type="checkbox" data-op="events"> Events</label><label><input type="checkbox" data-op="analytics"> Analytics</label><label><input type="checkbox" data-op="crm"> CRM</label><label><input type="checkbox" data-op="pos"> POS</label><label><input type="checkbox" data-op="pms"> PMS</label><label><input type="checkbox" data-op="inventory"> Inventory</label><label><input type="checkbox" data-op="loyalty"> Loyalty</label></div></details>
+        <details class="setup-accordion"><summary>Payments</summary><div class="checkgrid" id="paymentChoices"><label><input type="checkbox" value="MPESA"> M-Pesa</label><label><input type="checkbox" value="STRIPE"> Stripe</label><label><input type="checkbox" value="PAYSTACK"> Paystack</label><label><input type="checkbox" value="FLUTTERWAVE"> Flutterwave</label><label><input type="checkbox" value="PESAPAL"> PesaPal</label><label><input type="checkbox" value="PAYPAL"> PayPal</label><label><input type="checkbox" value="CARD"> Card</label><label><input type="checkbox" value="BANK_TRANSFER"> Bank transfer</label><label><input type="checkbox" value="CASH"> Cash</label></div></details>
+        <details class="setup-accordion"><summary>Integrations</summary><div class="checkgrid" id="integrationChoices"><label><input type="checkbox" value="POS"> POS</label><label><input type="checkbox" value="PMS"> PMS</label><label><input type="checkbox" value="CRM"> CRM</label><label><input type="checkbox" value="ACCOUNTING"> Accounting</label><label><input type="checkbox" value="INVENTORY"> Inventory</label><label><input type="checkbox" value="WHATSAPP"> WhatsApp</label><label><input type="checkbox" value="EMAIL"> Email</label><label><input type="checkbox" value="SMS"> SMS</label></div></details>
+        <details class="setup-accordion"><summary>QR / NFC and locations</summary><label><input id="nfcRequired" type="checkbox"> NFC</label> <label><input id="qrRequired" type="checkbox" checked> QR</label><input id="hardwareQuantity" type="number" min="0" placeholder="Number of touchpoints"><input id="locationList" placeholder="Locations, comma separated"></details>
+        <button class="primary">Save configuration & request quote</button>
+      </form></article>
+    </div>
+    <section class="portal-subsection"><h3>Quote & onboarding</h3><div id="quotes">No quote yet.</div></section>
+  </details>
+
+  <details id="experience" class="dashboard-section portal-panel setup-accordion">
+    <summary><span class="section-kicker">CUSTOMER EXPERIENCE</span> Customer touchpoints</summary>
+    <div class="section-heading"><div><h2>QR experiences</h2><p>Create and test the links customers will use.</p></div></div>
+    <div class="dashboard-card"><form id="endpointForm" class="inline-form"><input id="endpointName" placeholder="Touchpoint name" required><input id="endpointCode" placeholder="Unique code" required><select id="endpointType"><option>TABLE</option><option>ROOM</option><option>PRODUCT</option><option>SERVICE</option><option>WAITER</option><option>EVENT</option><option>CUSTOM</option></select><label><input id="allowOrdering" type="checkbox"> Ordering</label><button class="primary">Create touchpoint</button></form><div id="endpoints"></div></div>
+    <div class="setup-grid feature-dependent" data-feature="ordering"><article class="dashboard-card"><h3>Catalogue</h3><form id="productForm" class="inline-form"><input id="productName" placeholder="Product/service name" required><input id="productPrice" type="number" min="0" step="0.01" placeholder="Price" required><button class="primary">Add product</button></form><div id="products"></div></article><article class="dashboard-card"><h3>Locations</h3><form id="branchForm" class="inline-form"><input id="branchName" placeholder="Location name" required><input id="branchCode" placeholder="Code" required><input id="branchAddress" placeholder="Address"><button class="primary">Add location</button></form><div id="branches"></div></article></div>
+  </details>
+
+  <details id="operations" class="dashboard-section portal-panel setup-accordion">
+    <summary><span class="section-kicker">ACTIVITY</span> Business activity</summary>
+    <div class="section-heading"><div><h2>Only what your business uses</h2><p>Operational areas appear automatically from your configuration.</p></div></div>
+    <div class="operation-grid">
+      <article class="dashboard-card feature-dependent" data-feature="ordering"><h3>Orders</h3><div id="orders"></div></article>
+      <article class="dashboard-card feature-dependent" data-feature="reservations"><h3>Reservations</h3><div class="empty-state">Reservation workspace ready.</div></article>
+      <article class="dashboard-card feature-dependent" data-feature="appointments"><h3>Appointments</h3><div class="empty-state">Appointment workspace ready.</div></article>
+      <article class="dashboard-card feature-dependent" data-feature="staff"><h3>Staff</h3><div id="staff"></div></article>
+      <article class="dashboard-card feature-dependent" data-feature="events"><h3>Events</h3><div id="events"></div></article>
+      <article class="dashboard-card feature-dependent" data-feature="integrations"><h3>Integrations</h3><div id="integrations"></div></article>
+      <article class="dashboard-card feature-dependent" data-feature="payments"><h3>Payments</h3><div id="payments"></div></article>
+      <article class="dashboard-card feature-dependent" data-feature="revenue"><h3>Revenue</h3><div id="revenueValue" class="large-value">—</div><p class="small">Shown only when transaction handling is enabled.</p></article>
+      <article class="dashboard-card feature-dependent" data-feature="sessions"><h3>Customer activity</h3><div id="sessions"></div></article>
+    </div>
+  </details>
+
+  <details id="insights" class="dashboard-section portal-panel feature-dependent setup-accordion" data-feature="analytics">
+    <summary><span class="section-kicker">INSIGHTS</span> Business insights</summary>
+    <article class="dashboard-card"><div id="insightSummary" class="insight-grid"></div></article>
+  </details>
+</main>
+<script type="module" src="/portal.js"></script></body></html>
