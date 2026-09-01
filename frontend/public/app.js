@@ -2,9 +2,9 @@ import { API, apiPath } from "/api-contract.js";
 
 const tokenKey = "reviewtap_token";
 const packages = {
-  smart: { name: "Smart", price: 19, cards: 1, smart: true, analytics: true, multi: false },
-  business: { name: "Business", price: 49, cards: 5, smart: true, analytics: true, multi: true },
-  pro: { name: "Pro", price: 99, cards: 15, smart: true, analytics: true, multi: true },
+  smart: { name: "Smart", price: 39, cards: 1, smart: true, analytics: true, multi: false },
+  business: { name: "Business", price: 78, cards: 5, smart: true, analytics: true, multi: true },
+  pro: { name: "Pro", price: 155, cards: 15, smart: true, analytics: true, multi: true },
   enterprise: { name: "Enterprise", price: null, cards: 0, smart: true, analytics: true, multi: true }
 };
 const rates = { USD: 1, EUR: 0.85, GBP: 0.73, KES: 129, AED: 3.67, CAD: 1.37, AUD: 1.53 };
