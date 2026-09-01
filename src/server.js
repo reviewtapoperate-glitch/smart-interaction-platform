@@ -56,8 +56,14 @@ io.on("connection", socket => {
 });
 app.use((err, _req, res, _next) => {
   console.error(err);
-  const status = err.status || (err.name === "ZodError" ? 400 : 500);
-  const message = err.name === "ZodError" ? "Invalid request data" : (env.NODE_ENV === "production" && status === 500 ? "Internal server error" : err.message);
+  const isValidation = err.name === "ZodError";
+  const status = err.status || (isValidation ? 400 : 500);
+  const details = isValidation && Array.isArray(err.issues)
+    ? err.issues.map(issue => `${issue.path?.length ? issue.path.join(".") : "request"}: ${issue.message}`).join("; ")
+    : null;
+  const message = isValidation
+    ? `Invalid request data${details ? ` — ${details}` : ""}`
+    : (env.NODE_ENV === "production" && status === 500 ? "Internal server error" : err.message);
   res.status(status).json({ error: message });
 });
 app.use(express.static(frontendDir, { index: false }));
