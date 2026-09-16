@@ -8,27 +8,26 @@ router.use(authRequired);
 
 router.get("/summary", asyncRoute(async (req, res) => {
   const businessId = req.auth.businessId;
-
-  const [endpoints, sessions, orders, payments, events] = await Promise.all([
+  const [endpoints, sessions, orders, payments, events, profileViews, actions] = await Promise.all([
     prisma.endpoint.count({ where: { businessId, status: "ACTIVE" } }),
     prisma.session.count({ where: { businessId } }),
     prisma.order.count({ where: { businessId } }),
     prisma.payment.count({ where: { businessId, status: "SUCCESS" } }),
-    prisma.analyticsEvent.count({ where: { businessId } })
+    prisma.analyticsEvent.count({ where: { businessId } }),
+    prisma.analyticsEvent.count({ where: { businessId, eventName: { in: ["PROFILE_OPENED", "ENDPOINT_OPENED"] } } }),
+    prisma.analyticsEvent.groupBy({ by: ["eventName"], where: { businessId }, _count: { _all: true } })
   ]);
-
-  const successful = await prisma.payment.aggregate({
-    where: { businessId, status: "SUCCESS" },
-    _sum: { amountMinor: true }
-  });
-
+  const successful = await prisma.payment.aggregate({ where: { businessId, status: "SUCCESS" }, _sum: { amountMinor: true } });
+  const actionCounts = Object.fromEntries(actions.map(row => [row.eventName, row._count._all]));
   res.json({
     endpoints,
     sessions,
     orders,
     successfulPayments: payments,
     interactionEvents: events,
-    paidAmountMinor: successful._sum.amountMinor || 0
+    profileViews,
+    paidAmountMinor: successful._sum.amountMinor || 0,
+    actionCounts
   });
 }));
 
