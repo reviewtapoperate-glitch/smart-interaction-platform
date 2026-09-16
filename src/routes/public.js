@@ -10,9 +10,12 @@ const router = express.Router();
 const endpointActions = ["REVIEW_CLICKED","WHATSAPP_CLICKED","WEBSITE_CLICKED","SOCIAL_CLICKED","DIRECTIONS_CLICKED","SAVE_CONTACT_CLICKED","SHARE_CLICKED","PAYMENT_COPIED","MENU_OPENED","GALLERY_OPENED"];
 
 async function loadProfileEndpoint(linkId) {
-  const endpoints = await prisma.endpoint.findMany({ where: { status: "ACTIVE" }, include: { business: true, branch: true } });
-  return endpoints.find(endpoint => (endpoint.actionProfile?.linkId || endpoint.code) === linkId) || null;
+  const endpoint = await prisma.endpoint.findUnique({ where: { publicToken: linkId }, include: { business: true, branch: true } });
+  if (endpoint?.status === "ACTIVE") return endpoint;
+  const endpoints = await prisma.endpoint.findMany({ where: { status: "ACTIVE" }, include: { business: true, branch: true }, take: 100 });
+  return endpoints.find(item => (item.actionProfile?.linkId || item.code) === linkId) || null;
 }
+
 function profileResponse(endpoint) {
   return { endpoint: { id: endpoint.id, name: endpoint.name, type: endpoint.type, actionProfile: endpoint.actionProfile || {}, branch: endpoint.branch?.name || null, publicToken: endpoint.publicToken }, business: { id: endpoint.business.id, name: endpoint.business.name, currency: endpoint.business.currency, timezone: endpoint.business.timezone, websiteUrl: endpoint.business.websiteUrl, googleBusinessUrl: endpoint.business.googleBusinessUrl, logoUrl: endpoint.business.logoUrl } };
 }
@@ -22,9 +25,9 @@ router.get("/search", asyncRoute(async (req, res) => {
   const type = String(req.query.type || "").trim().toUpperCase();
   const rows = await prisma.endpoint.findMany({ where: { status: "ACTIVE" }, include: { business: true, branch: true }, orderBy: { createdAt: "desc" }, take: 100 });
   const results = rows.filter(e => {
-    if (type && e.type !== type) return false;
-    if (!q) return true;
     const p = e.actionProfile || {}, menu = Array.isArray(p.menu) ? p.menu : [];
+    if (type && String(p.profileType || e.type).toUpperCase() !== type) return false;
+    if (!q) return true;
     return [e.name, e.business.name, p.fullName, p.title, p.profileType, p.address, ...menu.flatMap(i => [i.name, i.category, i.description])].some(v => String(v || "").toLowerCase().includes(q));
   }).slice(0, 30).map(e => ({ id: e.id, name: e.actionProfile?.fullName || e.business.name || e.name, title: e.actionProfile?.title || "", type: e.actionProfile?.profileType || e.type, linkId: e.actionProfile?.linkId || e.code, publicToken: e.publicToken, businessName: e.business.name, address: e.actionProfile?.address || e.branch?.address || "", menu: Array.isArray(e.actionProfile?.menu) ? e.actionProfile.menu.map(i => i.name).slice(0, 8) : [] }));
   res.json({ results });
