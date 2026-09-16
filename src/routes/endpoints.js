@@ -11,14 +11,9 @@ import { audit } from "../services/audit.js";
 const router = express.Router();
 router.use(authRequired);
 
-const actionProfileSchema = z.object({
-  reviewUrl: z.url().nullable().optional(),
-  whatsappUrl: z.url().nullable().optional(),
-  websiteUrl: z.url().nullable().optional(),
-  socialUrl: z.url().nullable().optional(),
-  directionsUrl: z.url().nullable().optional(),
-  allowOrdering: z.boolean().optional()
-}).strict();
+// The smart-link profile is intentionally flexible: ReviewTap is universal,
+// so profile types can suggest fields without imposing a fixed business schema.
+const actionProfileSchema = z.record(z.string().max(80), z.unknown());
 
 router.get("/", asyncRoute(async (req, res) => {
   const endpoints = await prisma.endpoint.findMany({
@@ -115,7 +110,10 @@ router.get("/:id/qr", asyncRoute(async (req, res) => {
 
   if (!endpoint) return res.status(404).json({ error: "Endpoint not found" });
 
-  const url = `${env.PUBLIC_BASE_URL}/e/${endpoint.publicToken}`;
+  const section = typeof req.query.section === "string" && /^[a-z0-9_-]+$/i.test(req.query.section)
+    ? req.query.section
+    : null;
+  const url = `${env.PUBLIC_BASE_URL}/e/${endpoint.publicToken}${section ? `?section=${encodeURIComponent(section)}` : ""}`;
   const png = await QRCode.toBuffer(url, { width: 700, margin: 2 });
   res.type("png").send(png);
 }));
