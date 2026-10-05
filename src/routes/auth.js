@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { randomToken, slugify } from "../utils/tokens.js";
-import { signToken } from "../utils/auth.js";
+import { signToken, verifyToken } from "../utils/auth.js";
 import { asyncRoute } from "../utils/http.js";
 
 const router = express.Router();
@@ -11,21 +11,29 @@ const router = express.Router();
 async function createAccessCode(userId, businessId) {
   for (let i = 0; i < 8; i++) {
     const accessCode = `RT-${randomToken(6).replace(/[^A-Z0-9]/gi, "").slice(0, 8).toUpperCase()}`;
+    const accessCodeHash = await bcrypt.hash(accessCode, 12);
+    const accessCodePrefix = accessCode.slice(0, 6).toUpperCase();
     try {
-      const row = await prisma.$queryRawUnsafe(`INSERT INTO "OwnerAccess" ("id","userId","businessId","accessCode") VALUES ($1,$2,$3,$4) ON CONFLICT ("userId") DO UPDATE SET "accessCode"=EXCLUDED."accessCode", "updatedAt"=CURRENT_TIMESTAMP RETURNING "accessCode"`, randomToken(12), userId, businessId, accessCode);
-      return row[0]?.accessCode || accessCode;
+      const row = await prisma.$queryRawUnsafe(
+        `INSERT INTO "OwnerAccess" ("id","userId","businessId","accessCodeHash","accessCodePrefix") VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT ("userId") DO UPDATE SET "accessCodeHash"=EXCLUDED."accessCodeHash", "accessCodePrefix"=EXCLUDED."accessCodePrefix", "accessCode"=NULL, "updatedAt"=CURRENT_TIMESTAMP
+         RETURNING "accessCodePrefix"`,
+        randomToken(12), userId, businessId, accessCodeHash, accessCodePrefix
+      );
+      if (row[0]) return accessCode;
     } catch (error) {
-      if (!String(error.message).includes("OwnerAccess_accessCode_key")) throw error;
+      if (!String(error.message).includes("OwnerAccess_accessCodePrefix_key")) throw error;
     }
   }
   throw new Error("Could not generate access code");
 }
 
 async function issue(user, business) {
-  const token = signToken(user);
-  const access = await prisma.$queryRawUnsafe(`SELECT "accessCode" FROM "OwnerAccess" WHERE "userId"=$1 LIMIT 1`, user.id);
-  const accessCode = access[0]?.accessCode || await createAccessCode(user.id, business.id);
-  return { token, accessCode, user: { id: user.id, name: user.name, email: user.email, role: user.role, businessId: user.businessId }, business };
+  return {
+    token: signToken(user),
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, businessId: user.businessId },
+    business
+  };
 }
 
 router.post("/register", asyncRoute(async (req, res) => {
@@ -42,7 +50,8 @@ router.post("/register", asyncRoute(async (req, res) => {
     await tx.auditLog.create({ data: { businessId: business.id, userId: user.id, action: "BUSINESS_REGISTERED", entityType: "Business", entityId: business.id } });
     return { business, user };
   });
-  res.status(201).json(await issue(result.user, result.business));
+  const accessCode = await createAccessCode(result.user.id, result.business.id);
+  res.status(201).json({ ...(await issue(result.user, result.business)), accessCode });
 }));
 
 router.post("/login", asyncRoute(async (req, res) => {
@@ -54,9 +63,17 @@ router.post("/login", asyncRoute(async (req, res) => {
 
 router.post("/access-login", asyncRoute(async (req, res) => {
   const data = z.object({ accessCode: z.string().trim().min(6).max(32) }).parse(req.body);
-  const rows = await prisma.$queryRawUnsafe(`SELECT "userId" FROM "OwnerAccess" WHERE UPPER("accessCode")=UPPER($1) LIMIT 1`, data.accessCode);
-  if (!rows[0]) return res.status(401).json({ error: "Invalid access code" });
-  const user = await prisma.user.findUnique({ where: { id: rows[0].userId }, include: { business: true } });
+  const prefix = data.accessCode.slice(0, 6).toUpperCase();
+  const rows = await prisma.$queryRawUnsafe(`SELECT "id","userId","accessCodeHash" FROM "OwnerAccess" WHERE UPPER("accessCodePrefix")=$1 LIMIT 20`, prefix);
+  let match = null;
+  for (const row of rows) {
+    if (row.accessCodeHash && await bcrypt.compare(data.accessCode, row.accessCodeHash)) {
+      match = row;
+      break;
+    }
+  }
+  if (!match) return res.status(401).json({ error: "Invalid access code" });
+  const user = await prisma.user.findUnique({ where: { id: match.userId }, include: { business: true } });
   if (!user || !user.active || user.role !== "OWNER") return res.status(401).json({ error: "Invalid access code" });
   res.json(await issue(user, user.business));
 }));
@@ -64,7 +81,6 @@ router.post("/access-login", asyncRoute(async (req, res) => {
 router.post("/access-regenerate", asyncRoute(async (req, res) => {
   const auth = req.headers.authorization?.replace(/^Bearer\s+/i, "");
   if (!auth) return res.status(401).json({ error: "Authentication required" });
-  const { verifyToken } = await import("../utils/auth.js");
   const payload = verifyToken(auth);
   if (!payload?.sub || payload.role !== "OWNER") return res.status(403).json({ error: "Owner access required" });
   const user = await prisma.user.findUnique({ where: { id: payload.sub }, include: { business: true } });
