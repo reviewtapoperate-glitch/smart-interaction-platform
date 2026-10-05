@@ -11,7 +11,7 @@ export async function ensurePlatformTables() {
     `ALTER TABLE "OwnerAccess" ADD COLUMN IF NOT EXISTS "accessCodeHash" TEXT`,
     `ALTER TABLE "OwnerAccess" ADD COLUMN IF NOT EXISTS "accessCodePrefix" TEXT`,
     `ALTER TABLE "OwnerAccess" ALTER COLUMN "accessCode" DROP NOT NULL`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS "OwnerAccess_accessCodePrefix_key" ON "OwnerAccess"("accessCodePrefix")`,
+    `CREATE INDEX IF NOT EXISTS "OwnerAccess_accessCodePrefix_idx" ON "OwnerAccess"("accessCodePrefix")`,
     `CREATE INDEX IF NOT EXISTS "Quote_businessId_idx" ON "Quote"("businessId")`,
     `CREATE INDEX IF NOT EXISTS "NfcTag_businessId_idx" ON "NfcTag"("businessId")`,
     `CREATE INDEX IF NOT EXISTS "PlatformService_businessId_idx" ON "PlatformService"("businessId")`,
@@ -24,7 +24,7 @@ export async function ensurePlatformTables() {
     const plain = String(row.accessCode || "");
     if (!plain) continue;
     const hash = await bcrypt.hash(plain, 12);
-    const prefix = plain.slice(0, 7).toUpperCase();
+    const prefix = plain.slice(0, 6).toUpperCase();
     await prisma.$executeRawUnsafe(`UPDATE "OwnerAccess" SET "accessCodeHash"=$2,"accessCodePrefix"=$3,"accessCode"=NULL,"updatedAt"=CURRENT_TIMESTAMP WHERE "id"=$1`, row.id, hash, prefix);
   }
 }
